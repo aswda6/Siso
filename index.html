@@ -3,150 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snapchat Chat Interface with Firebase</title>
+    <title>Simple Calling Interface</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .chat-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background-color: #fffc00; /* Snapchat yellow */
-            padding: 15px;
+        .container {
+            margin-top: 50px;
             text-align: center;
         }
 
-        .messages {
-            padding: 15px;
+        video {
+            width: 400px;
             height: 300px;
-            overflow-y: scroll;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            padding: 10px;
+            border: 1px solid #ccc;
             border-radius: 10px;
-            position: relative;
-        }
-
-        .sent {
-            background-color: #e0f7fa;
-            align-self: flex-end;
-        }
-
-        .received {
-            background-color: #ffe0b2;
-        }
-
-        .time {
-            font-size: 0.8em;
-            color: gray;
-            position: absolute;
-            bottom: 5px;
-            right: 10px;
-        }
-
-        .input-area {
-            display: flex;
-            padding: 10px;
-            background-color: #f0f0f0;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            border: none;
-            padding: 10px;
-            border-radius: 20px;
-            margin-right: 10px;
-            outline: none;
         }
 
         button {
+            margin-top: 10px;
+            padding: 10px 20px;
             background-color: #fffc00; /* Snapchat yellow */
             border: none;
-            border-radius: 20px;
-            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
         }
     </style>
-    <!-- Include Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
-    <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZXRS9QsPyBwK9cuu6P_ysMAv33DC0iNE",
-            authDomain: "siskos-e804b.firebaseapp.com",
-            databaseURL: "https://siskos-e804b-default-rtdb.firebaseio.com",
-            projectId: "siskos-e804b",
-            storageBucket: "siskos-e804b.appspot.com",
-            messagingSenderId: "888699744266",
-            appId: "1:888699744266:web:8f53c20a688b83d6662ff3",
-            measurementId: "G-E6E28L3WW0"
-        };
-
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const messageText = input.value.trim();
-
-            if (messageText) {
-                const messageData = {
-                    text: messageText,
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                };
-
-                // Push the new message to the Firebase database
-                database.ref('messages').push(messageData).then(() => {
-                    input.value = ''; // Clear the input field
-                });
-            }
-        }
-
-        // Listen for new messages in the database
-        database.ref('messages').on('child_added', (snapshot) => {
-            const message = snapshot.val();
-            displayMessage(message.text, message.time);
-        });
-
-        function displayMessage(text, time) {
-            const messagesContainer = document.querySelector('.messages');
-            const newMessage = document.createElement('div');
-            newMessage.className = 'message received'; // Assuming received for all
-            newMessage.innerHTML = `
-                <p>${text}</p>
-                <span class="time">${time}</span>
-            `;
-            messagesContainer.appendChild(newMessage);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
-        }
-    </script>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header">
-            <h2>Chat with Friend</h2>
-        </div>
-        <div class="messages"></div>
-        <div class="input-area">
-            <input type="text" placeholder="Type a message..." id="messageInput">
-            <button onclick="sendMessage()">Send</button>
-        </div>
+    <div class="container">
+        <h2>Simple Calling Interface</h2>
+        <video id="localVideo" autoplay muted></video>
+        <video id="remoteVideo" autoplay></video>
+        <br>
+        <button onclick="startCall()">Start Call</button>
+        <button onclick="endCall()">End Call</button>
     </div>
+
+    <script>
+        const socket = io();
+
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+
+        const servers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' } // Google STUN server
+            ]
+        };
+
+        async function startCall() {
+            const localVideo = document.getElementById('localVideo');
+            const remoteVideo = document.getElementById('remoteVideo');
+
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+
+            peerConnection = new RTCPeerConnection(servers);
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            peerConnection.ontrack = event => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('offer', offer);
+        }
+
+        socket.on('offer', async (offer) => {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('answer', answer);
+        });
+
+        socket.on('answer', (answer) => {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        });
+
+        socket.on('ice-candidate', (candidate) => {
+            peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        });
+
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket.emit('ice-candidate', event.candidate);
+            }
+        };
+
+        function endCall() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            const localVideo = document.getElementById('localVideo');
+            const remoteVideo = document.getElementById('remoteVideo');
+
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+        }
+    </script>
 </body>
 </html>
