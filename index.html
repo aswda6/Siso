@@ -1,120 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Calling Interface</title>
+    <title>Real-Time Chatbox</title>
     <style>
+        /* Basic styling for the chatbox */
         body {
             font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            margin-top: 50px;
-            text-align: center;
-        }
-
-        video {
-            width: 400px;
-            height: 300px;
-            border: 1px solid #ccc;
             border-radius: 10px;
+            box-shadow: 0px 5px 25px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
         }
 
-        button {
-            margin-top: 10px;
+        .chat-window {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #ffffff;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #e1f5fe;
+        }
+
+        .message .username {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .chat-form {
+            display: flex;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+
+        .chat-form input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .chat-form button {
             padding: 10px 20px;
-            background-color: #fffc00; /* Snapchat yellow */
             border: none;
+            background-color: #007bff;
+            color: #ffffff;
+            font-weight: bold;
             border-radius: 5px;
             cursor: pointer;
         }
+
+        .chat-form button:hover {
+            background-color: #0056b3;
+        }
     </style>
-    <script src="/socket.io/socket.io.js"></script>
 </head>
+
 <body>
-    <div class="container">
-        <h2>Simple Calling Interface</h2>
-        <video id="localVideo" autoplay muted></video>
-        <video id="remoteVideo" autoplay></video>
-        <br>
-        <button onclick="startCall()">Start Call</button>
-        <button onclick="endCall()">End Call</button>
+    <div class="chat-container">
+        <div class="chat-window" id="chatWindow">
+            <!-- Messages will appear here -->
+        </div>
+        <form class="chat-form" id="chatForm">
+            <input type="text" id="username" placeholder="Your Name" required />
+            <input type="text" id="message" placeholder="Type your message..." required />
+            <button type="submit">Send</button>
+        </form>
     </div>
 
-    <script>
-        const socket = io();
+    <!-- Firebase and JavaScript Code -->
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-        let localStream;
-        let remoteStream;
-        let peerConnection;
-
-        const servers = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' } // Google STUN server
-            ]
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZXRS9QsPyBwK9cuu6P_ysMAv33DC0iNE",
+            authDomain: "siskos-e804b.firebaseapp.com",
+            databaseURL: "https://siskos-e804b-default-rtdb.firebaseio.com",
+            projectId: "siskos-e804b",
+            storageBucket: "siskos-e804b.appspot.com",
+            messagingSenderId: "888699744266",
+            appId: "1:888699744266:web:8f53c20a688b83d6662ff3",
+            measurementId: "G-E6E28L3WW0"
         };
 
-        async function startCall() {
-            const localVideo = document.getElementById('localVideo');
-            const remoteVideo = document.getElementById('remoteVideo');
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localVideo.srcObject = localStream;
+        // Reference the database location for chat messages
+        const chatDB = ref(database, "chatMessages");
 
-            peerConnection = new RTCPeerConnection(servers);
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
+        // Get elements
+        const chatWindow = document.getElementById("chatWindow");
+        const chatForm = document.getElementById("chatForm");
+
+        // Add event listener to the form
+        chatForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value;
+            const message = document.getElementById("message").value;
+
+            // Save the message to Firebase
+            const newMessageRef = push(chatDB);
+            set(newMessageRef, {
+                username: username,
+                message: message,
+                timestamp: Date.now()
             });
 
-            peerConnection.ontrack = event => {
-                remoteVideo.srcObject = event.streams[0];
-            };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('offer', offer);
-        }
-
-        socket.on('offer', async (offer) => {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('answer', answer);
+            // Clear the message input
+            document.getElementById("message").value = "";
         });
 
-        socket.on('answer', (answer) => {
-            peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        // Display messages in the chat window
+        onChildAdded(chatDB, (data) => {
+            const messageData = data.val();
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+
+            messageDiv.innerHTML = `
+                <span class="username">${messageData.username}:</span>
+                <p>${messageData.message}</p>
+            `;
+            chatWindow.appendChild(messageDiv);
+
+            // Scroll to the bottom of the chat window
+            chatWindow.scrollTop = chatWindow.scrollHeight;
         });
-
-        socket.on('ice-candidate', (candidate) => {
-            peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        });
-
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit('ice-candidate', event.candidate);
-            }
-        };
-
-        function endCall() {
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-
-            const localVideo = document.getElementById('localVideo');
-            const remoteVideo = document.getElementById('remoteVideo');
-
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
-        }
     </script>
 </body>
+
 </html>
