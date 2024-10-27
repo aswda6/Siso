@@ -1,11 +1,11 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beautiful Chatbox</title>
+    <title>Firebase Chatbox</title>
     <style>
-        /* Styling for the entire page */
+        /* Basic styling */
         body {
             display: flex;
             justify-content: center;
@@ -15,11 +15,8 @@
             font-family: Arial, sans-serif;
             background-color: #f0f2f5;
         }
-
-        /* Chatbox container */
         .chatbox {
             width: 350px;
-            max-width: 100%;
             height: 500px;
             display: flex;
             flex-direction: column;
@@ -28,8 +25,6 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
-
-        /* Header styling */
         .chat-header {
             padding: 15px;
             background-color: #4A90E2;
@@ -38,16 +33,12 @@
             text-align: center;
             font-weight: bold;
         }
-
-        /* Chat messages container */
         .chat-messages {
             flex: 1;
             padding: 15px;
             overflow-y: auto;
             background-color: #f9f9f9;
         }
-
-        /* Styling for individual messages */
         .message {
             margin: 8px 0;
             padding: 10px;
@@ -55,26 +46,21 @@
             max-width: 75%;
             line-height: 1.4;
         }
-
         .user-message {
             background-color: #4A90E2;
             color: #ffffff;
             align-self: flex-end;
         }
-
         .friend-message {
             background-color: #e0e0e0;
             color: #333333;
             align-self: flex-start;
         }
-
-        /* Input area styling */
         .input-area {
             display: flex;
             padding: 10px;
             border-top: 1px solid #ddd;
         }
-
         .input-area input {
             flex: 1;
             padding: 10px;
@@ -83,7 +69,6 @@
             outline: none;
             font-size: 16px;
         }
-
         .input-area button {
             margin-left: 10px;
             padding: 10px 20px;
@@ -94,7 +79,6 @@
             font-size: 16px;
             cursor: pointer;
         }
-
         .input-area button:hover {
             background-color: #3a7dc2;
         }
@@ -113,29 +97,64 @@
     </div>
 </div>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
 <script>
-    // Track the sender (user or friend)
-    let isUserTurn = true;
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLZnKFOu0DX70md1KEp2uD0T0zXJ5rZhY",
+        authDomain: "kako-f0553.firebaseapp.com",
+        databaseURL: "https://kako-f0553-default-rtdb.firebaseio.com",
+        projectId: "kako-f0553",
+        storageBucket: "kako-f0553.appspot.com",
+        messagingSenderId: "992976907062",
+        appId: "1:992976907062:web:d8551001da313f62332197",
+        measurementId: "G-XYZYTTGD7V"
+    };
 
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Reference to the Firestore "messages" collection
+    const messagesRef = db.collection("messages");
+
+    // Function to load messages from Firestore
+    function loadMessages() {
+        messagesRef.orderBy("timestamp").onSnapshot(snapshot => {
+            const chatMessages = document.getElementById("chatMessages");
+            chatMessages.innerHTML = ""; // Clear chat window
+
+            snapshot.forEach(doc => {
+                const messageData = doc.data();
+                const messageElement = document.createElement("div");
+                messageElement.classList.add("message", messageData.sender === "user" ? "user-message" : "friend-message");
+                messageElement.textContent = messageData.text;
+                chatMessages.appendChild(messageElement);
+            });
+
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+        });
+    }
+
+    // Load messages initially
+    loadMessages();
+
+    // Function to send a message
     function sendMessage() {
-        const chatMessages = document.getElementById("chatMessages");
         const userInput = document.getElementById("userInput");
-
         const messageText = userInput.value.trim();
-        if (messageText === "") return; // Ignore empty messages
+        if (messageText === "") return;
 
-        // Create a new message element
-        const messageElement = document.createElement("div");
-        messageElement.classList.add("message", isUserTurn ? "user-message" : "friend-message");
-        messageElement.textContent = messageText;
+        messagesRef.add({
+            text: messageText,
+            sender: "user", // You can modify this logic to alternate between user and friend
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        // Append the message to chat and clear input
-        chatMessages.appendChild(messageElement);
-        userInput.value = "";
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the bottom
-
-        // Toggle turn to switch between user and friend
-        isUserTurn = !isUserTurn;
+        userInput.value = ""; // Clear input field
     }
 </script>
 
