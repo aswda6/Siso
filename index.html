@@ -75,7 +75,7 @@
                 Profile Picture:
                 <input type="file" id="signupProfilePic" accept="image/*" required onchange="previewImage(event)">
             </label>
-            <button href="siso.html" type="submit">Create Account</button>
+            <button type="submit">Create Account</button>
         </form>
     </div>
 
@@ -96,7 +96,7 @@
                 const reader = new FileReader();
                 reader.onloadend = function () {
                     // Redirect with query parameters
-                    window.location.href = `kako.html?username=${encodeURIComponent(username)}&profilePic=${encodeURIComponent(reader.result)}`;
+                    window.location.href = `siso.html?username=${encodeURIComponent(username)}&profilePic=${encodeURIComponent(reader.result)}`;
                 };
                 reader.readAsDataURL(profilePic); // Convert image to base64
             } else {
