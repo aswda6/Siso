@@ -15,6 +15,7 @@
             height: 100vh;
             margin: 0;
         }
+
         .container {
             background: white;
             padding: 20px;
@@ -22,9 +23,11 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             width: 300px;
         }
+
         h2 {
             text-align: center;
         }
+
         input[type="text"],
         input[type="email"],
         input[type="password"],
@@ -35,6 +38,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+
         button {
             width: 100%;
             padding: 10px;
@@ -44,6 +48,7 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #218838;
         }
@@ -53,7 +58,7 @@
 <body>
     <div class="container">
         <h2>Signup</h2>
-        <form id="signupForm">
+        <form id="signupForm" onsubmit="signup(event)">
             <label>
                 Username:
                 <input type="text" id="signupUsername" required>
@@ -70,7 +75,7 @@
                 Profile Picture:
                 <input type="file" id="signupProfilePic" accept="image/*" required onchange="previewImage(event)">
             </label>
-            <button type="button" onclick="signup()">Create Account</button>
+            <button type="submit">Create Account</button>
         </form>
     </div>
 
@@ -79,7 +84,9 @@
             // Handle image preview (optional)
         }
 
-        function signup() {
+        function signup(event) {
+            event.preventDefault(); // Prevent the default form submission
+
             const username = document.getElementById('signupUsername').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
