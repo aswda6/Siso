@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "public", // Replace with the directory where your index.html is located
+    "public": "public", // Replace with the directory where your kako.html is located
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -8,7 +8,7 @@
     ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "**"
         "destination": "/index.html"
       }
     ]
