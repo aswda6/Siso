@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            box-shadow: 0px 5px 25px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            background: white;
+        }
+
+        .chat-window {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #e1f5fe;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .message img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .message .username {
+            font-weight: bold;
+            color: #007bff;
+            margin-right: 5px;
+        }
+
+        .message .timestamp {
+            font-size: 12px;
+            color: #888;
+            margin-left: auto;
+        }
+
+        .delete-button {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-left: 10px;
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+
+        .message:hover .delete-button {
+            display: block;
+        }
+
+        .chat-form {
+            display: flex;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+
+        .chat-form input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .chat-form button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #ffffff;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-form button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-window" id="chatWindow"></div>
+        <form class="chat-form" id="chatForm">
+            <input type="text" id="message" placeholder="Type your message..." required />
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <!-- Firebase and JavaScript Code -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZXRS9QsPyBwK9cuu6P_ysMAv33DC0iNE",
+            authDomain: "siskos-e804b.firebaseapp.com",
+            databaseURL: "https://siskos-e804b-default-rtdb.firebaseio.com",
+            projectId: "siskos-e804b",
+            storageBucket: "siskos-e804b.appspot.com",
+            messagingSenderId: "888699744266",
+            appId: "1:888699744266:web:8f53c20a688b83d6662ff3",
+            measurementId: "G-E6E28L3WW0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Reference the database location for chat messages
+        const chatDB = ref(database, "chatMessages");
+
+        const chatWindow = document.getElementById("chatWindow");
+        const chatForm = document.getElementById("chatForm");
+
+        // Get username and profile picture from URL
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('username');
+        const profilePic = params.get('profilePic');
+
+        // Function to format the timestamp in AM/PM format
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            let hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+            return `${hours}:${minutesStr} ${ampm}`;
+        }
+
+        // Display a message
+        function displayMessage(message) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+            messageDiv.innerHTML = `
+                <img src="${message.profilePic}" alt="Profile Picture" />
+                <span class="username">${message.username}:</span>
+                <p>${message.content}</p>
+                <span class="timestamp">${formatTimestamp(message.timestamp)}</span>
+                <button class="delete-button" onclick="deleteMessage('${message.id}')">Delete</button>
+            `;
+            chatWindow.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Handle form submission
+        chatForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const messageContent = document.getElementById("message").value.trim();
+
+            if (messageContent !== "") {
+                const message = {
+                    username: username,
+                    content: messageContent,
+                    timestamp: Date.now(),
+                    profilePic: profilePic
+                };
+
+                // Save message to Firebase
+                const newMessageRef = push(chatDB);
+                set(newMessageRef, { ...message, id: newMessageRef.key });
+
+                document.getElementById("message").value = ""; // Clear input
+            }
+        });
+
+        // Retrieve messages from Firebase
+        onChildAdded(chatDB, (data) => {
+            const messageData = data.val();
+            messageData.id = data.key; // Attach the ID for deletion
+            displayMessage(messageData);
+        });
+
+        // Delete message function
+        window.deleteMessage = (id) => {
+            const messageRef = ref(database, `chatMessages/${id}`);
+            remove(messageRef);
+        };
+    </script>
+</body>
+
+</html>
