@@ -13,7 +13,7 @@
      $_SESSION['users'][$email] = ['name' => $name, 'password' => $password, 'token' => $token, 'verified' => false];
  
      // Send verification email
-     $verification_link = "http://yourdomain.com/verify.php?token=$token"; // Change to your domain
+     $verification_link = "http://https://aswda6.github.io/Siso/verify.php?token=$token"; // Change to your domain
      $subject = "Account Verification";
      $message = "Please verify your account by clicking the link: $verification_link";
      $headers = "From: wargame00101@example.com";
