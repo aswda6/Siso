@@ -1,179 +1,200 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup and Login</title>
+    <title>Signup/Login Form</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #e9ecef;
+            background-color: #f4f4f4;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            padding: 0;
         }
-
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            width: 400px;
-        }
-
-        h2 {
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
-            color: #343a40;
+            position: relative; /* Added for stacking context */
+            z-index: 1; /* Ensure container is above background */
         }
-
-        label {
-            display: block;
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 20px;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            margin: 10px 0;
+            align-items: center;
+            position: relative;
+        }
+        .file-input-wrapper {
+            position: relative;
             margin-bottom: 10px;
-            color: #495057;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #5c67f2;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
         }
-
-        input[type="email"],
-        input[type="password"],
-        input[type="text"],
-        input[type="file"],
-        textarea {
+        input[type="file"] {
+            position: absolute;
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #ced4da;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .emoji {
+            font-size: 30px;
+            color: #999;
+        }
+        input {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 16px;
+            width: 80%;
         }
-
         button {
-            width: 100%;
-            padding: 12px;
-            background-color: #007bff;
+            padding: 10px;
+            background-color: #5c67f2;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            width: 80%;
         }
-
         button:hover {
-            background-color: #0056b3;
+            background-color: #4e54e1;
         }
-
-        .form-toggle {
-            text-align: center;
+        .toggle {
             margin-top: 15px;
+            cursor: pointer;
+            color: #5c67f2;
         }
-
-        .form-toggle a {
-            color: #007bff;
-            text-decoration: none;
+        .notification {
+            display: none;
+            position: fixed;
+            top: 20px; /* Positioned at the top */
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background-color: #5c67f2; /* Blue color */
+            color: white;
+            border-radius: 20px; /* Circular styling */
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000; /* Ensure notification is above everything else */
         }
     </style>
 </head>
-
 <body>
     <div class="container">
-        <h2>Signup</h2>
-        <form action="https://formspree.io/f/xbljlway" method="POST" id="signupForm" onsubmit="return false;">
-            <label>
-                Username:
-                <input type="text" name="username" required>
-            </label>
-            <label>
-                Your email:
-                <input type="email" name="email" required>
-            </label>
-            <label>
-                Password:
-                <input type="password" name="password" required>
-            </label>
-            <label>
-                Profile Picture:
-                <input type="file" name="profilePic" accept="image/*" required>
-            </label>
-            <button type="submit" onclick="handleSignup()">Create Account</button>
+        <h2>Sign Up</h2>
+        
+        <form id="signupForm" onsubmit="return validateAndRedirect();">
+            <div class="file-input-wrapper">
+                <input type="file" name="profile_picture" accept="image/*" onchange="previewImage(event)" required>
+                <img id="profilePicture" src="" alt="Profile Picture" class="profile-pic">
+                <span class="emoji" id="cameraEmoji">📸</span>
+            </div>
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Sign Up</button>
         </form>
-        <div class="form-toggle">
-            <span>Already have an account? <a href="#login" onclick="toggleForms()">Login</a></span>
-        </div>
+        
+        <div class="toggle" onclick="toggleForms()">Already have an account? Login here.</div>
 
-        <h2 style="display: none;" id="loginHeader">Login</h2>
-        <form action="https://formspree.io/f/xbljlway" method="POST" id="loginForm" style="display: none;" onsubmit="return false;">
-            <label>
-                Your email:
-                <input type="email" name="email" required>
-            </label>
-            <label>
-                Password:
-                <input type="password" name="password" required>
-            </label>
-            <button type="submit" onclick="handleLogin()">Login</button>
-        </form>
-        <div class="form-toggle" id="loginToggle" style="display: none;">
-            <span>Don't have an account? <a href="#signup" onclick="toggleForms()">Signup</a></span>
+        <div id="loginForm" style="display: none;">
+            <h2>Login</h2>
+            <form action="https://your-backend-url/login" method="POST">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <div class="toggle" onclick="toggleForms()">Don't have an account? Sign Up here.</div>
         </div>
     </div>
 
+    <div id="notification" class="notification"></div>
+
     <script>
-        function handleSignup() {
-            const signupForm = document.getElementById('signupForm');
-            const username = signupForm.username.value;
-            const email = signupForm.email.value;
-            const password = signupForm.password.value;
-            const profilePic = signupForm.profilePic.files[0];
-
-            if (username && email && password && profilePic) {
-                // You can submit the form here or handle the form data
-
-                // Redirect to next page
-                window.location.href = "siso.html"; // Change to your desired next page
-            } else {
-                alert('Please fill all fields.');
+        function previewImage(event) {
+            const profilePic = document.getElementById('profilePicture');
+            const cameraEmoji = document.getElementById('cameraEmoji');
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function() {
+                profilePic.src = reader.result;
+                profilePic.style.display = 'block';
+                cameraEmoji.style.display = 'none';
             }
-        }
-
-        function handleLogin() {
-            const loginForm = document.getElementById('loginForm');
-            const email = loginForm.email.value;
-            const password = loginForm.password.value;
-
-            if (email && password) {
-                // You can submit the form here or handle the form data
-
-                // Redirect to next page
-                window.location.href = "siso.html"; // Change to your desired next page
-            } else {
-                alert('Please fill all fields.');
+            if (file) {
+                reader.readAsDataURL(file);
             }
         }
 
         function toggleForms() {
             const signupForm = document.getElementById('signupForm');
             const loginForm = document.getElementById('loginForm');
-            const signupHeader = document.querySelector('h2:first-of-type');
-            const loginHeader = document.getElementById('loginHeader');
-            const loginToggle = document.getElementById('loginToggle');
-
-            if (signupForm.style.display === 'none') {
-                signupForm.style.display = 'block';
-                signupHeader.style.display = 'block';
-                loginForm.style.display = 'none';
-                loginHeader.style.display = 'none';
-                loginToggle.style.display = 'none';
+            if (signupForm.style.display === "none") {
+                signupForm.style.display = "block";
+                loginForm.style.display = "none";
             } else {
-                signupForm.style.display = 'none';
-                signupHeader.style.display = 'none';
-                loginForm.style.display = 'block';
-                loginHeader.style.display = 'block';
-                loginToggle.style.display = 'block';
+                signupForm.style.display = "none";
+                loginForm.style.display = "block";
             }
+        }
+
+        function validateEmail(email) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
+        }
+
+        function validateAndRedirect() {
+            const email = document.querySelector('input[name="email"]').value;
+            const username = document.querySelector('input[name="username"]').value;
+            const profilePic = document.getElementById('profilePicture').src;
+            const notification = document.getElementById('notification');
+
+            if (!validateEmail(email)) {
+                notification.innerText = "Invalid email!";
+                notification.style.display = 'flex';
+                return false;
+            }
+
+            localStorage.setItem('username', username);
+            localStorage.setItem('profilePic', profilePic);
+
+            notification.innerText = "Sign-up successful!";
+            notification.style.display = 'flex';
+
+            setTimeout(() => {
+                window.location.href = 'kako.html';
+            }, 3000); // 3 seconds delay
+
+            return false;
         }
     </script>
 </body>
-
 </html>
